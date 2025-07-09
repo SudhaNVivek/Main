@@ -1,0 +1,545 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADF-SVD-Sample"
+		},
+		"ls_abs_svd_sink_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ls_abs_svd_sink'"
+		},
+		"ls_fs_svd_src_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'ls_fs_svd_src'"
+		},
+		"ls_fs_svd_src_properties_typeProperties_host": {
+			"type": "string",
+			"defaultValue": "C:\\Users\\User\\OneDrive\\Desktop\\Azure\\Raw"
+		},
+		"ls_fs_svd_src_properties_typeProperties_userId": {
+			"type": "string",
+			"defaultValue": "User"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_abs_svd_sink')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('ls_abs_svd_sink_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SHIR')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_sinksplit')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_abs_svd_sink",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "customerdataflowsink"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_abs_svd_sink')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_df')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_abs_svd_sink",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "AdventureWorks_Customers.csv",
+						"container": "rawsource"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_abs_svd_sink')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_sink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_abs_svd_sink",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_sink_filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().p_sink_filename",
+							"type": "Expression"
+						},
+						"container": "rawsource"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_abs_svd_sink')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_fs_svd_src')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "FileServer",
+				"typeProperties": {
+					"host": "[parameters('ls_fs_svd_src_properties_typeProperties_host')]",
+					"userId": "[parameters('ls_fs_svd_src_properties_typeProperties_userId')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('ls_fs_svd_src_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "SHIR",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/SHIR')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_src')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_fs_svd_src",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "FileServerLocation",
+						"fileName": {
+							"value": "@dataset().p_filename",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_fs_svd_src')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_src_getmetada')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_fs_svd_src",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "FileServerLocation"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_fs_svd_src')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_svd_sample')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_df",
+								"type": "DatasetReference"
+							},
+							"name": "dfsrc"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "df_sinksplit",
+								"type": "DatasetReference"
+							},
+							"name": "mrsink",
+							"rejectedDataLinkedService": {
+								"referenceName": "ls_abs_svd_sink",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"dataset": {
+								"referenceName": "df_sinksplit",
+								"type": "DatasetReference"
+							},
+							"name": "mrssink",
+							"rejectedDataLinkedService": {
+								"referenceName": "ls_abs_svd_sink",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"dataset": {
+								"referenceName": "df_sinksplit",
+								"type": "DatasetReference"
+							},
+							"name": "mssink",
+							"rejectedDataLinkedService": {
+								"referenceName": "ls_abs_svd_sink",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"dataset": {
+								"referenceName": "df_sinksplit",
+								"type": "DatasetReference"
+							},
+							"name": "otherssink",
+							"rejectedDataLinkedService": {
+								"referenceName": "ls_abs_svd_sink",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"transformations": [
+						{
+							"name": "sort1"
+						},
+						{
+							"name": "MapDrifted2",
+							"description": "Creates an explicit mapping for each drifted column"
+						},
+						{
+							"name": "split1"
+						}
+					],
+					"scriptLines": [
+						"parameters{",
+						"     parameter1 as string (TotalChildren)",
+						"}",
+						"source(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     limit: 100,",
+						"     ignoreNoFilesFound: false) ~> dfsrc",
+						"MapDrifted2 sort(asc(CustomerKey, true)) ~> sort1",
+						"dfsrc derive(CustomerKey = toString(byName('CustomerKey')),",
+						"          Prefix = toString(byName('Prefix')),",
+						"          FirstName = toString(byName('FirstName')),",
+						"          LastName = toString(byName('LastName')),",
+						"          BirthDate = toString(byName('BirthDate')),",
+						"          MaritalStatus = toString(byName('MaritalStatus')),",
+						"          Gender = toString(byName('Gender')),",
+						"          EmailAddress = toString(byName('EmailAddress')),",
+						"          AnnualIncome = toString(byName('AnnualIncome')),",
+						"          TotalChildren = toString(byName('TotalChildren')),",
+						"          EducationLevel = toString(byName('EducationLevel')),",
+						"          Occupation = toString(byName('Occupation')),",
+						"          HomeOwner = toString(byName('HomeOwner'))) ~> MapDrifted2",
+						"sort1 split(Prefix==\"MR.\",",
+						"     Prefix==\"MRS.\",",
+						"     Prefix==\"MS.\",",
+						"     disjoint: false) ~> split1@(Mr, Mrs, Ms, Others)",
+						"split1@Mr sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     filePattern:(\"MR\"),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> mrsink",
+						"split1@Mrs sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     filePattern:'\"MRS\"',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> mrssink",
+						"split1@Ms sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     filePattern:'\"MS\"',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> mssink",
+						"split1@Others sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     filePattern:'\"Others\"',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> otherssink"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_df')]",
+				"[concat(variables('factoryId'), '/datasets/df_sinksplit')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_abs_svd_sink')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_Local_to_Azure')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_src_getmetada",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "FileServerReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEach_GetAllFiles",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Metadata').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyFiles",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "FileServerReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_src",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_sink",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_sink_filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "Data flow split",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "ForEach_GetAllFiles",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_svd_sample",
+								"type": "DataFlowReference",
+								"parameters": {
+									"parameter1": "TotalChildren"
+								},
+								"datasetParameters": {
+									"dfsrc": {},
+									"mrsink": {},
+									"mrssink": {},
+									"mssink": {},
+									"otherssink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-07-08T10:53:29Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_src_getmetada')]",
+				"[concat(variables('factoryId'), '/dataflows/DF_svd_sample')]",
+				"[concat(variables('factoryId'), '/datasets/ds_src')]",
+				"[concat(variables('factoryId'), '/datasets/ds_sink')]"
+			]
+		}
+	]
+}

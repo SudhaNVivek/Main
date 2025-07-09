@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "ADF-SVD-Sample"
+		},
+		"ls_abs_svd_sink_connectionString": {
+			"value": ""
+		},
+		"ls_fs_svd_src_password": {
+			"value": ""
+		},
+		"ls_fs_svd_src_properties_typeProperties_host": {
+			"value": "C:\\Users\\User\\OneDrive\\Desktop\\Azure\\Raw"
+		},
+		"ls_fs_svd_src_properties_typeProperties_userId": {
+			"value": "User"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
