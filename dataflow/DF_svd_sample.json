@@ -1,0 +1,122 @@
+{
+	"name": "DF_svd_sample",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_df",
+						"type": "DatasetReference"
+					},
+					"name": "dfsrc"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "df_sinksplit",
+						"type": "DatasetReference"
+					},
+					"name": "mrsink",
+					"rejectedDataLinkedService": {
+						"referenceName": "ls_abs_svd_sink",
+						"type": "LinkedServiceReference"
+					}
+				},
+				{
+					"dataset": {
+						"referenceName": "df_sinksplit",
+						"type": "DatasetReference"
+					},
+					"name": "mrssink",
+					"rejectedDataLinkedService": {
+						"referenceName": "ls_abs_svd_sink",
+						"type": "LinkedServiceReference"
+					}
+				},
+				{
+					"dataset": {
+						"referenceName": "df_sinksplit",
+						"type": "DatasetReference"
+					},
+					"name": "mssink",
+					"rejectedDataLinkedService": {
+						"referenceName": "ls_abs_svd_sink",
+						"type": "LinkedServiceReference"
+					}
+				},
+				{
+					"dataset": {
+						"referenceName": "df_sinksplit",
+						"type": "DatasetReference"
+					},
+					"name": "otherssink",
+					"rejectedDataLinkedService": {
+						"referenceName": "ls_abs_svd_sink",
+						"type": "LinkedServiceReference"
+					}
+				}
+			],
+			"transformations": [
+				{
+					"name": "sort1"
+				},
+				{
+					"name": "MapDrifted2",
+					"description": "Creates an explicit mapping for each drifted column"
+				},
+				{
+					"name": "split1"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     parameter1 as string (TotalChildren)",
+				"}",
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     limit: 100,",
+				"     ignoreNoFilesFound: false) ~> dfsrc",
+				"MapDrifted2 sort(asc(CustomerKey, true)) ~> sort1",
+				"dfsrc derive(CustomerKey = toString(byName('CustomerKey')),",
+				"          Prefix = toString(byName('Prefix')),",
+				"          FirstName = toString(byName('FirstName')),",
+				"          LastName = toString(byName('LastName')),",
+				"          BirthDate = toString(byName('BirthDate')),",
+				"          MaritalStatus = toString(byName('MaritalStatus')),",
+				"          Gender = toString(byName('Gender')),",
+				"          EmailAddress = toString(byName('EmailAddress')),",
+				"          AnnualIncome = toString(byName('AnnualIncome')),",
+				"          TotalChildren = toString(byName('TotalChildren')),",
+				"          EducationLevel = toString(byName('EducationLevel')),",
+				"          Occupation = toString(byName('Occupation')),",
+				"          HomeOwner = toString(byName('HomeOwner'))) ~> MapDrifted2",
+				"sort1 split(Prefix==\"MR.\",",
+				"     Prefix==\"MRS.\",",
+				"     Prefix==\"MS.\",",
+				"     disjoint: false) ~> split1@(Mr, Mrs, Ms, Others)",
+				"split1@Mr sink(allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     filePattern:(\"MR\"),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> mrsink",
+				"split1@Mrs sink(allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     filePattern:'\"MRS\"',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> mrssink",
+				"split1@Ms sink(allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     filePattern:'\"MS\"',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> mssink",
+				"split1@Others sink(allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     filePattern:'\"Others\"',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> otherssink"
+			]
+		}
+	}
+}

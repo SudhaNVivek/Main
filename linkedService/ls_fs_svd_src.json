@@ -1,0 +1,17 @@
+{
+	"name": "ls_fs_svd_src",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "FileServer",
+		"typeProperties": {
+			"host": "C:\\Users\\User\\OneDrive\\Desktop\\Azure\\Raw",
+			"userId": "User",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiJiNjI5YzZmYy0xMmU0LTQ4MWItYWYzZS0yNWM0NWUwNWVlOTMiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "SHIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

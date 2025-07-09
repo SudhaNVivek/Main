@@ -1,0 +1,9 @@
+{
+	"name": "ADF-SVD-Sample",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "3200f75b-a4be-4253-bd78-6457b86147dc",
+		"tenantId": "5c25def2-6941-4c3c-8643-b22be2fd9dd2"
+	}
+}
